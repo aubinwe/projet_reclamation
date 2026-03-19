@@ -14,7 +14,16 @@ echo "🧹 Nettoyage manuel du cache..."
 rm -f bootstrap/cache/config.php bootstrap/cache/services.php bootstrap/cache/packages.php bootstrap/cache/routes.php
 
 # 2. Générer dynamiquement le fichier .env de manière TRÈS explicite
+# On utilise les variables DB_* par défaut, mais on fallback sur les variables native Railway MYSQL*
 echo "📝 Génération forcée du fichier .env..."
+FINAL_DB_HOST="${DB_HOST:-$MYSQLHOST}"
+FINAL_DB_PORT="${DB_PORT:-$MYSQLPORT}"
+FINAL_DB_DATABASE="${DB_DATABASE:-$MYSQLDATABASE}"
+FINAL_DB_USER="${DB_USERNAME:-$MYSQLUSER}"
+FINAL_DB_PASS="${DB_PASSWORD:-$MYSQLPASSWORD}"
+
+echo "   DEBUG: Tentative de connexion sur Host=[$FINAL_DB_HOST] Port=[$FINAL_DB_PORT]"
+
 cat <<EOF > .env
 APP_NAME=IBAM_Claims
 APP_ENV=${APP_ENV:-production}
@@ -22,11 +31,11 @@ APP_KEY=${APP_KEY}
 APP_DEBUG=${APP_DEBUG:-false}
 APP_URL=${APP_URL}
 DB_CONNECTION=mysql
-DB_HOST=${DB_HOST}
-DB_PORT=${DB_PORT:-3306}
-DB_DATABASE=${DB_DATABASE}
-DB_USERNAME=${DB_USERNAME}
-DB_PASSWORD=${DB_PASSWORD}
+DB_HOST=${FINAL_DB_HOST}
+DB_PORT=${FINAL_DB_PORT:-3306}
+DB_DATABASE=${FINAL_DB_DATABASE}
+DB_USERNAME=${FINAL_DB_USER}
+DB_PASSWORD=${FINAL_DB_PASS}
 CACHE_STORE=file
 CACHE_DRIVER=file
 SESSION_DRIVER=file

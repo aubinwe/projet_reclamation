@@ -9,9 +9,13 @@ if [ -z "$APP_KEY" ]; then
     php artisan key:generate --force
 fi
 
-# Optimiser l'application pour la production
+# Nettoyer les anciens caches pour forcer la relecture des variables Railway
+echo "🧹 Nettoyage du cache..."
+php artisan config:clear
+php artisan cache:clear
+
+# Optimiser l'application pour la production (optionnel si on veut rester flexible)
 echo "⚙️  Optimisation Laravel..."
-php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 

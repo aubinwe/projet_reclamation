@@ -34,7 +34,8 @@ COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 # Copier les fichiers buildés depuis le stage 1
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Railway expose le port 8080 par défaut
+# Railway expose le port via l'env PORT (par défaut 8080)
 EXPOSE 8080
 
+# Forcer Nginx à rester au premier plan
 CMD ["nginx", "-g", "daemon off;"]

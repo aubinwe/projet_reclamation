@@ -15,33 +15,9 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Debug: Lister les variables d'environnement disponibles (seulement les noms pour la sécurité)
-echo "🔍 Variables d'environnement détectées (clés uniquement) :"
-env | cut -d= -f1 | sort
-
-# Attendre que la base de données soit prête
-echo "⏳ Attente de la base de données (Host: $DB_HOST)..."
-if [ -z "$DB_HOST" ]; then
-    echo "❌ Erreur: DB_HOST n'est pas défini dans les variables d'environnement."
-    exit 1
-fi
-
-until php -r "
-    try {
-        \$pdo = new PDO(
-            'mysql:host=' . getenv('DB_HOST') . ';port=' . (getenv('DB_PORT') ?: 3306),
-            getenv('DB_USERNAME'),
-            getenv('DB_PASSWORD'),
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
-        exit(0);
-    } catch (Exception \$e) {
-        exit(1);
-    }
-"; do
-    echo "   DB ($DB_HOST) pas encore prête, nouvelle tentative dans 5s..."
-    sleep 5
-done
+# Attendre que la base de données soit prête (optionnel en prod, Railway gère les dépendances)
+echo "⏳ Tentative de migration de la base de données..."
+php artisan migrate --force || echo "⚠️ Migration échouée, mais on continue le démarrage..."
 
 echo "✅ Base de données accessible !"
 

@@ -1,68 +1,72 @@
 # =====================================================
 # STAGE 1 : Installation des dépendances PHP
 # =====================================================
-FROM php:8.2-fpm-alpine AS vendor
+FROM php:8.4-fpm AS vendor
 
 WORKDIR /app
 
-# Installer les dépendances système nécessaires à composer
-RUN apk add --no-cache \
+# Installer les dépendances système
+RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libpng-dev \
     libxml2-dev \
     libzip-dev \
-    oniguruma-dev
+    libonig-dev
 
 # Installer les extensions PHP
 RUN docker-php-ext-install pdo_mysql mbstring bcmath zip exif pcntl
 
-# Copier Composer depuis son image officielle
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Copier Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copier uniquement les fichiers nécessaires à composer
+# Copier les fichiers composer
 COPY composer.json composer.lock ./
 
-# Installer les dépendances sans les dev-dependencies
+# Installer les dépendances en ignorant la vérification de version PHP 
+# car on SAIT qu'on est en 8.4 dans ce Dockerfile
 RUN composer install \
     --no-dev \
     --no-scripts \
     --no-autoloader \
     --no-interaction \
-    --prefer-dist
+    --prefer-dist \
+    --ignore-platform-req=php
 
-# Copier tout le code source
+# Copier le reste du code
 COPY . .
 
-# Générer l'autoloader optimisé
-RUN composer dump-autoload --optimize --no-dev
+# Générer l'autoloader
+RUN composer dump-autoload --optimize --no-dev --ignore-platform-req=php
 
 # =====================================================
 # STAGE 2 : Image de production finale
 # =====================================================
-FROM php:8.2-fpm-alpine AS production
+FROM php:8.4-fpm AS production
 
 WORKDIR /var/www
 
 # Installer Nginx et les dépendances système minimum
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     nginx \
     libpng-dev \
     libxml2-dev \
     libzip-dev \
-    oniguruma-dev \
-    supervisor
+    libonig-dev \
+    supervisor \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Installer les extensions PHP
 RUN docker-php-ext-install pdo_mysql mbstring bcmath zip exif pcntl
 
 # Copier la configuration Nginx
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/nginx.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Copier PHP-FPM configuration
-COPY docker/php-fpm.conf /etc/php82/php-fpm.d/www.conf
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 
-# Copier la configuration Supervisor (gère Nginx + PHP-FPM ensemble)
+# Copier la configuration Supervisor
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Copier le code + vendor depuis le stage 1

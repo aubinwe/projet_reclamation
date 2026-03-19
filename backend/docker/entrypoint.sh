@@ -9,33 +9,44 @@ if [ -z "$APP_KEY" ]; then
     php artisan key:generate --force
 fi
 
-# Générer dynamiquement le fichier .env à partir des variables Railway
-# Cela garantit que Laravel voit bien les variables même si l'environnement système est capricieux
-echo "📝 Génération du fichier .env..."
-echo "APP_NAME=IBAM_Claims" > .env
-env | grep -E '^(APP_|DB_|MAIL_|CACHE_|SESSION_|QUEUE_|VITE_|FRONTEND_)' >> .env
+# 1. Supprimer manuellement les fichiers de cache (NE PAS UTILISER ARTISAN ICI)
+echo "🧹 Nettoyage manuel du cache..."
+rm -f bootstrap/cache/config.php bootstrap/cache/services.php bootstrap/cache/packages.php bootstrap/cache/routes.php
 
-# Nettoyer les anciens caches pour forcer la relecture du nouveau .env
-echo "🧹 Nettoyage du cache..."
-php artisan config:clear
-php artisan cache:clear
+# 2. Générer dynamiquement le fichier .env de manière TRÈS explicite
+echo "📝 Génération forcée du fichier .env..."
+cat <<EOF > .env
+APP_NAME=IBAM_Claims
+APP_ENV=${APP_ENV:-production}
+APP_KEY=${APP_KEY}
+APP_DEBUG=${APP_DEBUG:-false}
+APP_URL=${APP_URL}
+DB_CONNECTION=mysql
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT:-3306}
+DB_DATABASE=${DB_DATABASE}
+DB_USERNAME=${DB_USERNAME}
+DB_PASSWORD=${DB_PASSWORD}
+CACHE_STORE=file
+CACHE_DRIVER=file
+SESSION_DRIVER=file
+QUEUE_CONNECTION=sync
+FRONTEND_URL=${FRONTEND_URL}
+EOF
 
-# Optimiser l'application pour la production
-echo "⚙️  Optimisation Laravel..."
+# 3. Réparer les permissions (car on est en root dans l'entrypoint)
+chown www-data:www-data .env
+
+# 4. Exécuter les migrations (on laisse Laravel gérer la connexion maintenant)
+echo "⏳ Tentative de migration de la base de données..."
+php artisan migrate --force --no-interaction || echo "⚠️ Migration ignorée (DB peut-être pas encore prête)."
+
+# 5. Optimiser (seulement si le .env est prêt)
+echo "⚙️  Optimisation finale..."
+php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Attendre que la base de données soit prête (optionnel en prod, Railway gère les dépendances)
-echo "⏳ Tentative de migration de la base de données..."
-php artisan migrate --force || echo "⚠️ Migration échouée ou déjà faite..."
-
-echo "✅ Base de données accessible !"
-
-# Exécuter les migrations (safe: ne recrée pas les tables existantes)
-echo "🗃️  Exécution des migrations..."
-php artisan migrate --force
-
 echo "✅ Backend prêt ! Démarrage de Nginx + PHP-FPM..."
-
-# Démarrer Supervisor (qui lance Nginx + PHP-FPM)
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+

@@ -72,8 +72,9 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Copier le code + vendor depuis le stage 1
 COPY --from=vendor /app /var/www
 
-# Créer les répertoires nécessaires à Laravel
+# Créer les répertoires nécessaires à Laravel et le fichier .env vide
 RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
+    && touch .env \
     && chown -R www-data:www-data /var/www \
     && chmod -R 775 storage bootstrap/cache
 

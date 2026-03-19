@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Backend App
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        user: ibam_user
+        uid: 1000
+    image: ibam-backend
+    container_name: ibam-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+    networks:
+      - ibam-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Nginx dedicated to Backend
+  webserver:
+    image: nginx:alpine
+    container_name: ibam-webserver
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www
+      - ./docker-nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - ibam-network
+    depends_on:
+      - app
+
+  # Database
+  db:
+    image: mysql:8.0
+    container_name: ibam-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ibam_reclamation
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - ibam-db-data:/var/lib/mysql
+    networks:
+      - ibam-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 20s
+      retries: 10
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ibam-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - ibam-network
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+
+networks:
+  ibam-network:
+    driver: bridge
+
+volumes:
+  ibam-db-data:
+    driver: local

@@ -13,16 +13,28 @@ fi
 echo "🧹 Nettoyage manuel du cache..."
 rm -f bootstrap/cache/config.php bootstrap/cache/services.php bootstrap/cache/packages.php bootstrap/cache/routes.php
 
-# 2. Générer dynamiquement le fichier .env de manière TRÈS explicite
-# On utilise les variables DB_* par défaut, mais on fallback sur les variables native Railway MYSQL*
-echo "📝 Génération forcée du fichier .env..."
+# 2. Audit des variables (DÉBOGAGE FINAL)
+echo "🔍 Audit des variables d'environnement :"
+printenv | grep -E '^(DB_|MYSQL)' | cut -d= -f1 | sort
+printenv | grep -E '^(DB_|MYSQL)' | while read line; do
+    key=$(echo $line | cut -d= -f1)
+    value=$(echo $line | cut -d= -f2-)
+    if [ -z "$value" ]; then
+        echo "   ⚠️ $key est VIDE"
+    else
+        echo "   ✅ $key est PRÉSENT (Longueur: ${#value})"
+    fi
+done
+
+# Déterminer les variables finales
 FINAL_DB_HOST="${DB_HOST:-$MYSQLHOST}"
 FINAL_DB_PORT="${DB_PORT:-$MYSQLPORT}"
 FINAL_DB_DATABASE="${DB_DATABASE:-$MYSQLDATABASE}"
 FINAL_DB_USER="${DB_USERNAME:-$MYSQLUSER}"
 FINAL_DB_PASS="${DB_PASSWORD:-$MYSQLPASSWORD}"
 
-echo "   DEBUG: Tentative de connexion sur Host=[$FINAL_DB_HOST] Port=[$FINAL_DB_PORT]"
+echo "📝 Génération forcée du fichier .env..."
+echo "   -> DB_HOST final: [$FINAL_DB_HOST]"
 
 cat <<EOF > .env
 APP_NAME=IBAM_Claims

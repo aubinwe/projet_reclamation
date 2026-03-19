@@ -16,17 +16,27 @@ php artisan route:cache
 php artisan view:cache
 
 # Attendre que la base de données soit prête
-echo "⏳ Attente de la base de données..."
-until php artisan db:check 2>/dev/null || php -r "
-    \$pdo = new PDO(
-        'mysql:host=' . getenv('DB_HOST') . ';port=' . (getenv('DB_PORT') ?: 3306),
-        getenv('DB_USERNAME'),
-        getenv('DB_PASSWORD')
-    );
-    echo 'ok';
-" 2>/dev/null; do
-    echo "   DB pas encore prête, nouvelle tentative dans 3s..."
-    sleep 3
+echo "⏳ Attente de la base de données ($DB_HOST)..."
+if [ -z "$DB_HOST" ]; then
+    echo "❌ Erreur: DB_HOST n'est pas défini dans les variables d'environnement."
+    exit 1
+fi
+
+until php -r "
+    try {
+        \$pdo = new PDO(
+            'mysql:host=' . getenv('DB_HOST') . ';port=' . (getenv('DB_PORT') ?: 3306),
+            getenv('DB_USERNAME'),
+            getenv('DB_PASSWORD'),
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+        exit(0);
+    } catch (Exception \$e) {
+        exit(1);
+    }
+"; do
+    echo "   DB ($DB_HOST) pas encore prête, nouvelle tentative dans 5s..."
+    sleep 5
 done
 
 echo "✅ Base de données accessible !"

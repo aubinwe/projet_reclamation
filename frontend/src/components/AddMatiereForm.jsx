@@ -12,7 +12,7 @@ const AddMatiereForm = ({ onSuccess }) => {
   useEffect(() => {
     const fetchFilieres = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/filieres')
+        const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/filieres`)
         setFilieres(response.data)
       } catch (error) {
         console.error('Erreur lors du chargement des filières:', error)
@@ -27,7 +27,7 @@ const AddMatiereForm = ({ onSuccess }) => {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await axios.post('http://localhost:8000/api/matieres', formData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/matieres`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

@@ -61,6 +61,7 @@ chown www-data:www-data .env
 # 4. Exécuter les migrations (on laisse Laravel gérer la connexion maintenant)
 echo "⏳ Tentative de migration de la base de données..."
 php artisan migrate --force --no-interaction || echo "⚠️ Migration ignorée (DB peut-être pas encore prête)."
+php artisan db:seed --force --no-interaction || echo "⚠️ Seeding ignoré."
 
 # 5. Optimiser (seulement si le .env est prêt)
 echo "⚙️  Optimisation finale..."

@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($roles as $role) {
-            Role::create($role);
+            Role::firstOrCreate(['name' => $role['name']], $role);
         }
 
         // Filieres
@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
 
         foreach ($filiereNames as $name) {
             foreach ($niveaux as $niveau) {
-                Filiere::create(['name' => $name, 'niveau' => $niveau]);
+                Filiere::firstOrCreate(['name' => $name, 'niveau' => $niveau]);
             }
         }
 
@@ -85,7 +85,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
-            User::create($user);
+            User::firstOrCreate(['email' => $user['email']], $user);
         }
 
         // Matieres
@@ -102,59 +102,61 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($matieres as $matiere) {
-            Matiere::create($matiere);
+            Matiere::firstOrCreate(['name' => $matiere['name'], 'filiere_id' => $matiere['filiere_id']], $matiere);
         }
 
         // Demande de test 1 (Scolarité)
-        \App\Models\Demande::create([
-            'user_id' => 4,
-            'matiere_id' => 1,
-            'objet' => 'Erreur note examen final',
-            'objectif' => 'Correction de la note de 11 à 14',
-            'motif' => 'Je pense avoir répondu juste à la question 3 de la section algorithmique.',
-            'statut' => 'SOUMISE',
-            'nom_prenom' => 'Etudiant 1',
-            'filiere_niveau' => 'Informatique L3',
-            'enseignant_id' => null,
-            'enseignant_nom' => 'Dr. Traoré',
-            'note_actuelle' => 11,
-            'note_demandee' => 14,
-            'justification' => null,
-        ]);
+        \App\Models\Demande::firstOrCreate(
+            ['user_id' => 4, 'matiere_id' => 1, 'objet' => 'Erreur note examen final'],
+            [
+                'objectif' => 'Correction de la note de 11 à 14',
+                'motif' => 'Je pense avoir répondu juste à la question 3 de la section algorithmique.',
+                'statut' => 'SOUMISE',
+                'nom_prenom' => 'Etudiant 1',
+                'filiere_niveau' => 'Informatique L3',
+                'enseignant_id' => null,
+                'enseignant_nom' => 'Dr. Traoré',
+                'note_actuelle' => 11,
+                'note_demandee' => 14,
+                'justification' => null,
+            ]
+        );
 
         // Demande de test 2 (Déjà transmise au DA)
-        \App\Models\Demande::create([
-            'user_id' => 4,
-            'matiere_id' => 2,
-            'objet' => 'Omission de bonus de projet',
-            'objectif' => 'Ajout du point de bonus promis',
-            'motif' => 'Mon projet a été validé avec bonus par l\'enseignant mais n\'apparaît pas sur le relevé.',
-            'statut' => 'ENVOYEE_DA',
-            'nom_prenom' => 'Etudiant 1',
-            'filiere_niveau' => 'Informatique L3',
-            'enseignant_id' => null,
-            'enseignant_nom' => 'Pr. Ouédraogo',
-            'note_actuelle' => 9,
-            'note_demandee' => 10,
-            'justification' => null,
-            'commentaire_scolarite' => 'Justificatif vérifié. À transmettre pour imputation.',
-        ]);
+        \App\Models\Demande::firstOrCreate(
+            ['user_id' => 4, 'matiere_id' => 2, 'objet' => 'Omission de bonus de projet'],
+            [
+                'objectif' => 'Ajout du point de bonus promis',
+                'motif' => 'Mon projet a été validé avec bonus par l\'enseignant mais n\'apparaît pas sur le relevé.',
+                'statut' => 'ENVOYEE_DA',
+                'nom_prenom' => 'Etudiant 1',
+                'filiere_niveau' => 'Informatique L3',
+                'enseignant_id' => null,
+                'enseignant_nom' => 'Pr. Ouédraogo',
+                'note_actuelle' => 9,
+                'note_demandee' => 10,
+                'justification' => null,
+                'commentaire_scolarite' => 'Justificatif vérifié. À transmettre pour imputation.',
+            ]
+        );
 
         // Seed Notifications for Student
-        \App\Models\Notification::create([
-            'user_id' => 4,
-            'message' => 'Votre demande a été reçue par la scolarité.',
-            'type' => 'status_update',
-            'demande_id' => 1,
-            'created_at' => now(),
-        ]);
+        \App\Models\Notification::firstOrCreate(
+            ['user_id' => 4, 'message' => 'Votre demande a été reçue par la scolarité.'],
+            [
+                'type' => 'status_update',
+                'demande_id' => 1,
+                'created_at' => now(),
+            ]
+        );
 
-        \App\Models\Notification::create([
-            'user_id' => 4,
-            'message' => 'Votre note a été corrigée par l\'enseignant.',
-            'type' => 'status_update',
-            'demande_id' => 2,
-            'created_at' => now()->subHours(2),
-        ]);
+        \App\Models\Notification::firstOrCreate(
+            ['user_id' => 4, 'message' => 'Votre note a été corrigée par l\'enseignant.'],
+            [
+                'type' => 'status_update',
+                'demande_id' => 2,
+                'created_at' => now()->subHours(2),
+            ]
+        );
     }
 }
